@@ -14,8 +14,6 @@ def simulate_yearly_lumpsum(df,yearly_amount=10000): #yearly_amount($)
     
     value = units_total * y_end_prices
     
-    final_value = value.iloc[-1]
-    
     history_df = pd.DataFrame({
         "year": y_first_prices.index,
         "buy_price": y_first_prices.values,
@@ -25,9 +23,16 @@ def simulate_yearly_lumpsum(df,yearly_amount=10000): #yearly_amount($)
         "value": value.values,
     }).reset_index(drop=True)
     
+    
     history_df["value_10k_usd"] = history_df["value"] / 10000
     
-    return final_value, history_df
+    #総投資額追加 
+    history_df["invested_10k_usd"] = yearly_amount * (history_df.index + 1) / 10000
+    
+    total_invested = history_df["invested_10k_usd"].iloc[-1]
+    final_value = history_df["value_10k_usd"].iloc[-1]
+    
+    return final_value, history_df, total_invested
 
 if __name__ == "__main__":
     from src.load_prices import load_prices
@@ -35,22 +40,28 @@ if __name__ == "__main__":
     db_path = "data/prices.sqlite"
     df = load_prices(db_path)
     
-    final_value, history_df = simulate_yearly_lumpsum(df)
+    final_value, history_df, total_invested = simulate_yearly_lumpsum(df)
     
-    print(f"final_value:{final_value}")
-    print("------history_df------")
-    print(history_df.tail())
+    return_pct = (final_value / total_invested - 1) * 100
+    
+    print(f"final_value:{final_value:.2f}万ドル,最終リターン(%):{return_pct:.2f}%")
+    #print("------history_df------")
+    #print(history_df.tail())
     
     #グラフ表示
     x = history_df["year"]
-    y = history_df["value_10k_usd"]
+    y1 = history_df["value_10k_usd"]
+    y2 = history_df["invested_10k_usd"]
     
     plt.figure(figsize=(10,5))
-    plt.plot(x,y)
+    plt.plot(x, y1, label="Portfolio Value (10k USD)")
+    plt.plot(x, y2, label="Total Invested (10k USD)", linestyle="--")
+    
     plt.title("Yearly Lump Sum Portfolio Value (QQQ)")
-    plt.xlabel("year")
-    plt.ylabel("Portfolio Value (10k USD)")
+    plt.xlabel("Year")
+    plt.ylabel("Value (10k USD)")
     plt.grid(True)
+    plt.legend()
     plt.tight_layout()
     plt.savefig("output/lumpsum_value.png", dpi=150)
     
