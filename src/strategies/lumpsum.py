@@ -29,10 +29,16 @@ def simulate_yearly_lumpsum(df,yearly_amount=10000): #yearly_amount($)
     #総投資額追加 
     history_df["invested_10k_usd"] = yearly_amount * (history_df.index + 1) / 10000
     
-    total_invested = history_df["invested_10k_usd"].iloc[-1]
+    total_invested = history_df["invested_10k_usd"].iloc[-1] 
     final_value = history_df["value_10k_usd"].iloc[-1]
+    return_pct = (final_value / total_invested - 1) * 100 if total_invested != 0 else float("nan")
     
-    return final_value, history_df, total_invested
+    return {
+        "final_value": final_value,
+        "total_invested": total_invested,
+        "return_pct": return_pct,
+        "history_df": history_df
+    } 
 
 if __name__ == "__main__":
     from src.load_prices import load_prices
@@ -40,13 +46,13 @@ if __name__ == "__main__":
     db_path = "data/prices.sqlite"
     df = load_prices(db_path)
     
-    final_value, history_df, total_invested = simulate_yearly_lumpsum(df)
+    res = simulate_yearly_lumpsum(df)
     
-    return_pct = (final_value / total_invested - 1) * 100
+    final_value, total_invested, return_pct, history_df = (
+        res["final_value"], res["total_invested"], res["return_pct"], res["history_df"])
+    
     
     print(f"final_value:{final_value:.2f}万ドル,最終リターン(%):{return_pct:.2f}%")
-    #print("------history_df------")
-    #print(history_df.tail())
     
     #グラフ表示
     x = history_df["year"]
