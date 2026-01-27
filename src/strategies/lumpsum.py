@@ -1,5 +1,6 @@
 import pandas as pd
 from matplotlib import pyplot as plt
+from src.metrics import max_drawdown
 
 def simulate_yearly_lumpsum(df,yearly_amount=10000): #yearly_amount($)
     #年初で購入する価格を決定
@@ -27,33 +28,42 @@ def simulate_yearly_lumpsum(df,yearly_amount=10000): #yearly_amount($)
     history_df["value_10k_usd"] = history_df["value"] / 10000
     
     #総投資額追加 
-    history_df["invested_10k_usd"] = yearly_amount * (history_df.index + 1) / 10000
+    history_df["total_invested"] = yearly_amount * (history_df.index + 1) #USD
+    history_df["invested_10k_usd"] = history_df["total_invested"] / 10000 #万USD
+    
+    #グラフ用
+    history_df["return_pct_series"] = (history_df["value"] / history_df["total_invested"] - 1) * 100
+    history_df.loc[history_df["total_invested"] == 0, "return_pct_series"] = float("nan")
     
     total_invested = history_df["invested_10k_usd"].iloc[-1] 
     final_value = history_df["value_10k_usd"].iloc[-1]
     return_pct = (final_value / total_invested - 1) * 100 if total_invested != 0 else float("nan")
+    maxdd = max_drawdown(history_df["value"]) * 100
     
     return {
         "final_value": final_value,
         "total_invested": total_invested,
         "return_pct": return_pct,
+        "max_drawdown_pct": maxdd,
         "history_df": history_df
     } 
 
 if __name__ == "__main__":
+    import os
     from src.load_prices import load_prices
+    
+    os.makedirs("output", exist_ok=True)
     
     db_path = "data/prices.sqlite"
     df = load_prices(db_path)
-    
     res = simulate_yearly_lumpsum(df)
     
-    final_value, total_invested, return_pct, history_df = (
-        res["final_value"], res["total_invested"], res["return_pct"], res["history_df"])
+    final_value, total_invested, return_pct, max_drawdown_pct, history_df = (
+        res["final_value"], res["total_invested"], res["return_pct"], res["max_drawdown_pct"],res["history_df"])
     
     
     print(f"final_value:{final_value:.2f}万ドル,最終リターン(%):{return_pct:.2f}%")
-    
+    print(f"最大DD:{max_drawdown_pct:.2f}%")
     #グラフ表示
     x = history_df["year"]
     y1 = history_df["value_10k_usd"]

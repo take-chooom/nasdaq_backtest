@@ -10,21 +10,19 @@ def main():
     rows = []
     # --- lumpsum ---
     res = simulate_yearly_lumpsum(df,yearly_amount=10000)
-    
-    final_value, total_invested, return_pct, history_lump = (
-        res["final_value"], res["total_invested"], res["return_pct"], res["history_df"])
-    
     rows.append({
         "strategy": "lumpsum_yearly",
         "dip": None,
         "amount_usd": 10000,    #yearly_amount
-        "buy_cnt": len(history_lump),
-        "final_value": final_value,
-        "total_invested": total_invested,
-        "return_pct": return_pct,
+        "buy_cnt": len(res["history_df"]),
+        "final_value": res["final_value"],
+        "total_invested": res["total_invested"],
+        "return_pct": res["return_pct"],
+        "max_drawdown_pct": res["max_drawdown_pct"],
     })
     
-    for dip in [0.01*i for i in range(2,7)]:
+    # --- dip_buy grid search ---
+    for dip in [0.01*i for i in range(2,10)]:
         res = dip_buy(df,dip=dip, amount=1000)
         history_df = res["history_df"]
         buy_cnt = int(history_df["buy_signal"].sum())
@@ -37,9 +35,12 @@ def main():
             "final_value": res["final_value"],
             "total_invested": res["total_invested"],
             "return_pct": res["return_pct"],
+            "max_drawdown_pct": res["max_drawdown_pct"],
         })
     
-    result_df = pd.DataFrame(rows).sort_values("return_pct", ascending=False)
+    result_df = pd.DataFrame(rows).sort_values(
+        ["return_pct", "max_drawdown_pct"], ascending=[False,False]
+    )
     print(result_df.to_string(index=False))
     
 if __name__ == "__main__":
