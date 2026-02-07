@@ -3,4 +3,6 @@ __pycache__/
 *.pyc
 
 data/
-output/
+output/*
+!output/strategy_comparison.png
+
