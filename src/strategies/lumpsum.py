@@ -4,24 +4,29 @@ from src.metrics import max_drawdown
 
 def simulate_yearly_lumpsum(df,yearly_amount=10000): #yearly_amount($)
     #年初で購入する価格を決定
-    df = df.copy()
+    df = df.copy().sort_values("date").reset_index(drop=True)
     df["year"] = df["date"].dt.year
     
-    y_first_prices = df.groupby("year").first()["adj_close"]
-    y_end_prices = df.groupby("year").last()["adj_close"]
+    first_rows = df.groupby("year", as_index=False).first()
+    last_rows  = df.groupby("year", as_index=False).last()
+    
+    y_first_prices = first_rows["adj_close"].to_numpy()
+    y_end_prices = last_rows["adj_close"].to_numpy()
+    end_dates = last_rows["date"]# 年末のdate（dipと同じdate型）
+    years = first_rows["year"].to_numpy()  
     
     units_bought = yearly_amount / y_first_prices
     units_total = units_bought.cumsum()
-    
     value = units_total * y_end_prices
     
     history_df = pd.DataFrame({
-        "year": y_first_prices.index,
-        "buy_price": y_first_prices.values,
-        "year_end_price": y_end_prices.values,
-        "units_bought": units_bought.values,
-        "units_total": units_total.values,
-        "value": value.values,
+        "date": end_dates,
+        "year": years,
+        "buy_price": y_first_prices,
+        "year_end_price": y_end_prices,
+        "units_bought": units_bought,
+        "units_total": units_total,
+        "value": value,
     }).reset_index(drop=True)
     
     
