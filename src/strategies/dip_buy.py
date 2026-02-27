@@ -1,6 +1,7 @@
 import pandas as pd
 from matplotlib import pyplot as plt
 from src.metrics import max_drawdown
+from src.utils import normalize_backtest_results, calculate_final_metrics
 
 def dip_buy(df:pd.DataFrame, dip:float, amount=1000):
     df = df.copy().sort_values("date").reset_index(drop=True)
@@ -16,19 +17,13 @@ def dip_buy(df:pd.DataFrame, dip:float, amount=1000):
     #累積投資額
     df["total_invested"] = df["buy_signal"].cumsum() * amount 
 
-    #その時点のリターン%
-    df["return_pct_series"] = ((df["value"] / df["total_invested"]) - 1) * 100
-    df.loc[df["total_invested"] == 0, "return_pct_series"] = float("nan")
+    # 結果の正規化（重複していた処理を共通化）
+    df = normalize_backtest_results(df)
     
     maxdd = max_drawdown(df["value"]) * 100
     
-    #グラフ用
-    df["value_10k_usd"] = df["value"] / 10000
-    df["invested_10k_usd"] = df["total_invested"] / 10000
-    
-    final_value = float(df["value_10k_usd"].iloc[-1])
-    total_invested = float(df["invested_10k_usd"].iloc[-1])
-    return_pct = (final_value / total_invested - 1) * 100 if total_invested != 0 else float("nan")
+    # 最終メトリクスの計算（重複していた処理を共通化）
+    final_value, total_invested, return_pct = calculate_final_metrics(df)
     
     return {
         "final_value": final_value,

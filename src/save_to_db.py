@@ -40,7 +40,7 @@ def count_rows(db_path: str) -> int:
 
 
 if __name__ == "__main__":
-    from fetch_data import fetch_data
+    from src.fetch_data import fetch_data
     
     db_path = "data/prices.sqlite"
     create_prices_table(db_path)

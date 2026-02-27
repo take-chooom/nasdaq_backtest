@@ -1,6 +1,7 @@
 import pandas as pd
 from matplotlib import pyplot as plt
 from src.metrics import max_drawdown
+from src.utils import normalize_backtest_results, calculate_final_metrics
 
 def simulate_yearly_lumpsum(df,yearly_amount=10000): #yearly_amount($)
     #年初で購入する価格を決定
@@ -36,13 +37,11 @@ def simulate_yearly_lumpsum(df,yearly_amount=10000): #yearly_amount($)
     history_df["total_invested"] = yearly_amount * (history_df.index + 1) #USD
     history_df["invested_10k_usd"] = history_df["total_invested"] / 10000 #万USD
     
-    #グラフ用
-    history_df["return_pct_series"] = (history_df["value"] / history_df["total_invested"] - 1) * 100
-    history_df.loc[history_df["total_invested"] == 0, "return_pct_series"] = float("nan")
+    # 結果の正規化（重複していた処理を共通化）
+    history_df = normalize_backtest_results(history_df)
     
-    total_invested = history_df["invested_10k_usd"].iloc[-1] 
-    final_value = history_df["value_10k_usd"].iloc[-1]
-    return_pct = (final_value / total_invested - 1) * 100 if total_invested != 0 else float("nan")
+    # 最終メトリクスの計算（重複していた処理を共通化）
+    final_value, total_invested, return_pct = calculate_final_metrics(history_df)
     maxdd = max_drawdown(history_df["value"]) * 100
     
     return {
