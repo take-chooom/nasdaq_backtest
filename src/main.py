@@ -80,7 +80,8 @@ def main():
     plt.savefig("output/strategy_comparison.png", dpi=150)
     plt.close()
 
-    
+    return
     
 if __name__ == "__main__":
     main()
+    
