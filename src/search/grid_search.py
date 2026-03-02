@@ -4,7 +4,8 @@ import itertools
 import pandas as pd
 
 from src.load_prices import load_prices
-from src.strategies.dip_buy import DipBuyParams, simulate
+from src.strategies.types import DipBuyParams
+from src.strategies.dip_buy import simulate
 from src.metrics import max_drawdown
 
 def calc_years(history_df: pd.DataFrame) -> float:
@@ -136,12 +137,13 @@ def main():
     target_buy_amount = 5000  # ユーザーが設定するところ。人によって変わってくる
     results = run_grid_search(df, param_grid, target_buy_amount=target_buy_amount, lam=lam)
 
-    results.to_csv("output/results.csv", index=False)
+    results.to_csv("output/results2.csv", index=False)
+    results.to_excel("output/results2.xlsx", index=False)#見やすいように
     results.head(10).to_csv("output/top10.csv", index=False)
 
     print("=== TOP 10 ===")
     print(results.head(10).to_string(index=False))
-    print("\nSaved: output/results.csv, output/top10.csv")
+    print("\nSaved: output/results2.csv, output/results2.xlsx, output/top10.csv")
 
 
 if __name__ == "__main__":

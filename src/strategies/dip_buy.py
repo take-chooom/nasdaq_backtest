@@ -1,23 +1,10 @@
-from dataclasses import dataclass
 import pandas as pd
 from matplotlib import pyplot as plt
 from src.metrics import max_drawdown
 from src.utils import normalize_backtest_results, calculate_final_metrics
 
-@dataclass(frozen=True)
-class DipBuyParams:
-    dip_threshold: float
-    buy_amount: float = 1000.0
-    initial_amount: float | None = None  # 初期投資額（オプション、グリッドサーチで扱いやすいように）
-
-@dataclass(frozen=True)
-class SimResult:
-    final_value: float
-    total_invested: float
-    return_pct: float 
-    max_drawdown_pct: float
-    history_df: pd.DataFrame
-    n_trades: int
+# shared dataclasses for strategy results and params
+from src.strategies.types import DipBuyParams, SimResult
     
 def simulate(df:pd.DataFrame, params:DipBuyParams) -> SimResult:
     df = df.copy().sort_values("date").reset_index(drop=True)

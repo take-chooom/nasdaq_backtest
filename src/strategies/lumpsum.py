@@ -1,56 +1,68 @@
+from dataclasses import dataclass
 import pandas as pd
 from matplotlib import pyplot as plt
 from src.metrics import max_drawdown
 from src.utils import normalize_backtest_results, calculate_final_metrics
 
-def simulate_yearly_lumpsum(df,yearly_amount=10000): #yearly_amount($)
-    #年初で購入する価格を決定
+# 共有型を中心モジュールに移動したのでそこから取得
+from src.strategies.types import SimResult, LumpSumParams
+
+
+def simulate_yearly_lumpsum(df: pd.DataFrame, yearly_amount: float = 10000) -> SimResult:  # yearly_amount($)
+    params = LumpSumParams(yearly_amount=yearly_amount)
+    # 年初で購入する価格を決定
     df = df.copy().sort_values("date").reset_index(drop=True)
     df["year"] = df["date"].dt.year
-    
+
     first_rows = df.groupby("year", as_index=False).first()
-    last_rows  = df.groupby("year", as_index=False).last()
-    
+    last_rows = df.groupby("year", as_index=False).last()
+
     y_first_prices = first_rows["adj_close"].to_numpy()
     y_end_prices = last_rows["adj_close"].to_numpy()
-    end_dates = last_rows["date"]# 年末のdate（dipと同じdate型）
-    years = first_rows["year"].to_numpy()  
-    
-    units_bought = yearly_amount / y_first_prices
+    end_dates = last_rows["date"]  # 年末のdate（dipと同じdate型）
+    years = first_rows["year"].to_numpy()
+
+    units_bought = params.yearly_amount / y_first_prices
     units_total = units_bought.cumsum()
     value = units_total * y_end_prices
-    
-    history_df = pd.DataFrame({
-        "date": end_dates,
-        "year": years,
-        "buy_price": y_first_prices,
-        "year_end_price": y_end_prices,
-        "units_bought": units_bought,
-        "units_total": units_total,
-        "value": value,
-    }).reset_index(drop=True)
-    
-    
+
+    history_df = pd.DataFrame(
+        {
+            "date": end_dates,
+            "year": years,
+            "buy_price": y_first_prices,
+            "year_end_price": y_end_prices,
+            "units_bought": units_bought,
+            "units_total": units_total,
+            "value": value,
+        }
+    ).reset_index(drop=True)
+
     history_df["value_10k_usd"] = history_df["value"] / 10000
-    
-    #総投資額追加 
-    history_df["total_invested"] = yearly_amount * (history_df.index + 1) #USD
-    history_df["invested_10k_usd"] = history_df["total_invested"] / 10000 #万USD
-    
+
+    # 総投資額追加
+    history_df["total_invested"] = params.yearly_amount * (history_df.index + 1)  # USD
+    history_df["invested_10k_usd"] = history_df["total_invested"] / 10000  # 万USD
+
     # 結果の正規化（重複していた処理を共通化）
     history_df = normalize_backtest_results(history_df)
-    
+
     # 最終メトリクスの計算（重複していた処理を共通化）
-    final_value, total_invested, return_pct = calculate_final_metrics(history_df)
+    metrics = calculate_final_metrics(history_df)
+    final_value = float(metrics["final_value"])
+    total_invested = float(metrics["total_invested"])
+    return_pct = float(metrics["return_pct"]) if metrics["return_pct"] is not None else float("nan")
+
     maxdd = max_drawdown(history_df["value"]) * 100
-    
-    return {
-        "final_value": final_value,
-        "total_invested": total_invested,
-        "return_pct": return_pct,
-        "max_drawdown_pct": maxdd,
-        "history_df": history_df
-    } 
+
+    return SimResult(
+        final_value=final_value,
+        total_invested=total_invested,
+        return_pct=return_pct,
+        max_drawdown_pct=float(maxdd),
+        history_df=history_df,
+        n_trades=len(history_df),
+    )
 
 if __name__ == "__main__":
     import os
@@ -61,14 +73,16 @@ if __name__ == "__main__":
     db_path = "data/prices.sqlite"
     df = load_prices(db_path)
     res = simulate_yearly_lumpsum(df)
-    
-    final_value, total_invested, return_pct, max_drawdown_pct, history_df = (
-        res["final_value"], res["total_invested"], res["return_pct"], res["max_drawdown_pct"],res["history_df"])
-    
-    
+    # the result is a SimResult dataclass
+    final_value = res.final_value
+    total_invested = res.total_invested
+    return_pct = res.return_pct
+    max_drawdown_pct = res.max_drawdown_pct
+    history_df = res.history_df
+
     print(f"final_value:{final_value:.2f}万ドル,最終リターン(%):{return_pct:.2f}%")
     print(f"最大DD:{max_drawdown_pct:.2f}%")
-    #グラフ表示
+    # グラフ表示
     x = history_df["year"]
     y1 = history_df["value_10k_usd"]
     y2 = history_df["invested_10k_usd"]

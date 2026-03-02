@@ -14,18 +14,20 @@ def main():
     rows = []
     # --- lumpsum ---
     res = simulate_yearly_lumpsum(df, yearly_amount=10000)
-    hist_ls = res["history_df"]
+    # `simulate_yearly_lumpsum` now returns a SimResult dataclass
+    hist_ls = res.history_df
+    # metrics are already computed in res, but we can recalc if needed
     metrics = calculate_final_metrics(hist_ls)
-    maxdd = max_drawdown(hist_ls["value"]) * 100
+    maxdd = res.max_drawdown_pct
 
     rows.append({
         "strategy": "lumpsum_yearly",
         "dip": None,
-        "amount_usd": 10000,    #yearly_amount
+        "amount_usd": 10000,    # yearly_amount
         "buy_cnt": len(hist_ls),
-        "final_value": metrics.get("final_value"),
-        "total_invested": metrics.get("total_invested"),
-        "return_pct": metrics.get("return_pct"),
+        "final_value": res.final_value,
+        "total_invested": res.total_invested,
+        "return_pct": res.return_pct,
         "max_drawdown_pct": maxdd,
     })
 
@@ -41,19 +43,20 @@ def main():
     # --- dip_buy grid search ---
     for dip in [0.01*i for i in range(2,10)]:
         res = dip_buy(df, dip=dip, amount=1000)
-        history_df = res["history_df"]
+
+        history_df = res.history_df
         buy_cnt = int(history_df["buy_signal"].sum())
         metrics = calculate_final_metrics(history_df)
-        maxdd = max_drawdown(history_df["value"]) * 100
+        maxdd = res.max_drawdown_pct
 
         rows.append({
             "strategy": f"dip_buy_weekly_{int(dip*100)}pct",
             "dip": dip,
             "amount_usd": 1000,
             "buy_cnt": buy_cnt,
-            "final_value": metrics.get("final_value"),
-            "total_invested": metrics.get("total_invested"),
-            "return_pct": metrics.get("return_pct"),
+            "final_value": res.final_value,
+            "total_invested": res.total_invested,
+            "return_pct": res.return_pct,
             "max_drawdown_pct": maxdd,
         })
         
@@ -67,7 +70,8 @@ def main():
     result_df = pd.DataFrame(rows).sort_values(
         ["return_pct", "max_drawdown_pct"], ascending=[False,False]
     )
-    print(result_df.to_string(index=False))
+    result_df.to_csv("output/results1.csv", index=False)
+    result_df.to_excel("output/results1.xlsx", index=False)#見やすいように
     
     #----グラフを保存----
     plt.title("Strategy Comparison (QQQ)")
@@ -80,8 +84,7 @@ def main():
     plt.savefig("output/strategy_comparison.png", dpi=150)
     plt.close()
 
-    return
+    
     
 if __name__ == "__main__":
     main()
-    
