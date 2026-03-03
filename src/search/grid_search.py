@@ -132,9 +132,10 @@ def main():
         "initial_amount": [10000],  # 初期投資額固定
     }
 
-    lam = 0.1  # MDDのペナルティ係数（0.1は例。大きくするとMDDの影響が強くなる）
-
-    target_buy_amount = 5000  # ユーザーが設定するところ。人によって変わってくる
+    # ユーザーが設定するところ 一例として、lam = 0.1,target_buy_amount = 5000に設定した。
+    lam = 0.1  # MDDのペナルティ係数（大きくするとMDDの影響が強くなる。大きく減るのが怖いときはこの値を大きくすること）
+    target_buy_amount = 5000  # 投資余力。常にこのくらいは投資できる額。人によって変わってくる
+    
     results = run_grid_search(df, param_grid, target_buy_amount=target_buy_amount, lam=lam)
 
     results.to_csv("output/results2.csv", index=False)
