@@ -91,3 +91,16 @@ python -m src.search.grid_search
 
 # ヒートマップ生成（results.csv を可視化）
 python -m src.analysis.heatmaps
+```
+---
+##グリッドサーチ結果(top3抜粋)
+ dip_threshold  buy_amount  initial_amount     CAGR    MDD_pct  final_value  total_invested  return_pct  n_trades     years  rate_per_year    score
+          0.06       10000           10000 0.285922 -41.975336   855.907398            58.0 1375.702410        58 26.850103       2.148148 0.253279
+          0.06        5000           10000 0.253945 -42.274663   435.297546            29.5 1375.584902        58 26.850103       2.148148 0.232837
+          0.05       10000           10000 0.305899 -40.925910  1294.747073            86.0 1405.519852        86 26.850103       3.185185 0.225702
+
+上位結果から、dip_threshold 0.05〜0.06付近に安定して高スコア領域が存在することが確認できました。
+これは過剰売買を避けつつリターンを最大化できるバランス点であると考えられます。
+
+※本結果は、MDDに対するペナルティ係数（λ）および投資余力（target_buy_amount）の設定に依存する。
+          
